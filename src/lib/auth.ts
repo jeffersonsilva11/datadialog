@@ -21,10 +21,30 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async session({ session, user }) {
+      console.log("[AuthCallback] session callback", { session, user });
       if (session.user) {
         session.user.id = user.id;
       }
       return session;
+    },
+    async signIn({ user, account, profile }) {
+      console.log("[AuthCallback] signIn callback", {
+        user: user?.email,
+        account: account?.provider,
+        profile: profile?.email
+      });
+      return true;
+    },
+  },
+  events: {
+    async signIn({ user, account }) {
+      console.log("[AuthEvent] signIn event", {
+        userId: user.id,
+        provider: account?.provider
+      });
+    },
+    async session({ session }) {
+      console.log("[AuthEvent] session event", { userId: session.user?.id });
     },
   },
   pages: {

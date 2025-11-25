@@ -74,30 +74,39 @@ export default async function DashboardPage() {
                 </h2>
                 <p className="text-muted-foreground">
                   {googleAccount
-                    ? "Escolha qual propriedade você deseja analisar."
-                    : "Para começar a fazer perguntas sobre seus dados, você precisa conectar sua conta do Google Analytics."}
+                    ? "Escolha qual propriedade você deseja analisar para iniciar o chat."
+                    : "Para acessar a interface de chat e conversar com seus dados, você precisa primeiro conectar sua conta do Google Analytics."}
                 </p>
               </div>
 
-              {googleAccount ? <PropertySelector /> : <ConnectGAButton />}
+              {googleAccount ? (
+                <PropertySelector />
+              ) : (
+                <div className="space-y-4">
+                  <ConnectGAButton />
+                  <p className="text-xs text-muted-foreground">
+                    Você será redirecionado para o Google para autorizar o acesso.
+                  </p>
+                </div>
+              )}
 
               {!googleAccount && (
                 <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    O que você poderá fazer:
+                  <p className="text-sm font-medium text-muted-foreground mb-3">
+                    Após conectar, você terá acesso a:
                   </p>
                   <ul className="text-sm text-left space-y-2 text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <span className="text-green-500 mt-0.5">✓</span>
-                      <span>Fazer perguntas em linguagem natural</span>
+                      <span>Interface de chat conversacional</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-500 mt-0.5">✓</span>
-                      <span>Receber visualizações automáticas</span>
+                      <span>Visualizações automáticas de dados</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-500 mt-0.5">✓</span>
-                      <span>Obter insights inteligentes com IA</span>
+                      <span>Insights gerados por IA</span>
                     </li>
                   </ul>
                 </div>

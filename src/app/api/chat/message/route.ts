@@ -94,7 +94,7 @@ export async function POST(req: Request) {
     // Executar query no GA
     const reportParams = {
       ...analysis.parameters,
-      dateRanges: analysis.parameters.dateRanges || [{ startDate: '28daysAgo', endDate: 'today' }],
+      dateRanges: (analysis.parameters as any).dateRanges || [{ startDate: '28daysAgo', endDate: 'today' }],
     };
 
     const gaData = await gaClient.runReport(
@@ -131,12 +131,12 @@ export async function POST(req: Request) {
         conversationId: conversation.id,
         role: "assistant",
         content: insights,
-        metadata: {
+        metadata: JSON.stringify({
           data: gaData.rows,
           chart: chartConfig,
           parameters: analysis.parameters,
           intent: analysis.intent,
-        } as any,
+        }),
       },
     });
 

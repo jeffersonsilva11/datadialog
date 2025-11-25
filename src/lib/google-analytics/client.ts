@@ -33,8 +33,9 @@ export class GoogleAnalyticsClient {
             // Test auth headers generation
             const headers = await this.auth.getRequestHeaders();
             console.log("Successfully generated auth headers. Keys:", Object.keys(headers));
-            if (headers.Authorization) {
-                console.log("Authorization header starts with:", headers.Authorization.substring(0, 10) + "...");
+            const authHeader = (headers as any).Authorization;
+            if (authHeader) {
+                console.log("Authorization header starts with:", authHeader.substring(0, 10) + "...");
             }
         } catch (e) {
             console.error("Failed to generate auth headers or refresh token:", e);

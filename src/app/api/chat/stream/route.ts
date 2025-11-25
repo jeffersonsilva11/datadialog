@@ -135,12 +135,12 @@ export async function POST(req: Request) {
               conversationId: conversation.id,
               role: "assistant",
               content: fullInsights,
-              metadata: {
+              metadata: JSON.stringify({
                 data: gaData.rows,
                 chart: chartConfig,
                 parameters: analysis.parameters,
                 intent: analysis.intent,
-              } as any,
+              }),
             },
           });
 

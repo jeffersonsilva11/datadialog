@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -13,12 +13,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -65,8 +65,8 @@ model AnalyticsConnection {
   user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   propertyId          String
   propertyName        String?
-  accessToken         String   @db.Text
-  refreshToken        String?  @db.Text
+  accessToken         String
+  refreshToken        String?
   expiresAt           DateTime?
   scope               String?
   isActive            Boolean  @default(true)
@@ -94,8 +94,8 @@ model Message {
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           String       // 'user' | 'assistant' | 'system'
-  content        String       @db.Text
-  metadata       Json?        // Para armazenar gráficos, dados, etc
+  content        String
+  metadata       String?      // Para armazenar gráficos, dados, etc (JSON stringified)
   createdAt      DateTime     @default(now())
 
   @@index([conversationId])

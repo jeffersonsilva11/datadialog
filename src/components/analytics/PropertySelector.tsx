@@ -33,25 +33,25 @@ export function PropertySelector() {
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
-    useEffect(() => {
-        async function fetchProperties() {
-            try {
-                const response = await fetch("/api/analytics/properties");
-                const data = await response.json();
+    const fetchProperties = async () => {
+        try {
+            const response = await fetch("/api/analytics/properties");
+            const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(data.error || "Failed to fetch properties");
-                }
-
-                setProperties(data.properties || []);
-            } catch (err) {
-                console.error("Error fetching properties:", err);
-                setError("Não foi possível carregar suas propriedades do Analytics.");
-            } finally {
-                setIsLoading(false);
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to fetch properties");
             }
-        }
 
+            setProperties(data.properties || []);
+        } catch (err) {
+            console.error("Error fetching properties:", err);
+            setError("Não foi possível carregar suas propriedades do Analytics.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchProperties();
     }, []);
 
@@ -103,19 +103,24 @@ export function PropertySelector() {
 
     if (error) {
         return (
-            <Card className="max-w-md mx-auto">
+            <Card className="max-w-md mx-auto border-destructive/50">
                 <CardContent className="pt-6">
                     <div className="flex flex-col items-center text-center space-y-4">
                         <div className="bg-destructive/10 p-3 rounded-full">
                             <AlertCircle className="h-6 w-6 text-destructive" />
                         </div>
                         <div className="space-y-2">
-                            <h3 className="font-semibold text-lg">Erro ao carregar</h3>
+                            <h3 className="font-semibold text-lg text-destructive">Erro ao carregar propriedades</h3>
                             <p className="text-sm text-muted-foreground">{error}</p>
                         </div>
-                        <Button onClick={() => window.location.reload()} variant="outline">
-                            Tentar Novamente
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button onClick={() => window.location.reload()} variant="outline">
+                                Recarregar Página
+                            </Button>
+                            <Button onClick={() => { setError(null); setIsLoading(true); fetchProperties(); }} variant="default">
+                                Tentar Novamente
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>

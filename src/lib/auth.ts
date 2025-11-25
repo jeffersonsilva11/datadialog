@@ -35,6 +35,15 @@ export const authOptions: NextAuthOptions = {
       });
       return true;
     },
+    async redirect({ url, baseUrl }) {
+      console.log("[AuthCallback] redirect", { url, baseUrl });
+      // Se a URL já é do mesmo domínio, usa ela
+      if (url.startsWith(baseUrl)) return url;
+      // Se começa com /, adiciona o baseUrl
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Caso contrário, vai para o dashboard
+      return `${baseUrl}/dashboard`;
+    },
   },
   events: {
     async signIn({ user, account }) {
@@ -54,4 +63,16 @@ export const authOptions: NextAuthOptions = {
     strategy: "database",
     maxAge: 30 * 24 * 60 * 60, // 30 dias
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
+  },
+  useSecureCookies: process.env.NODE_ENV === 'production',
 };

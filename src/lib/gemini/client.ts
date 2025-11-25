@@ -22,7 +22,13 @@ export class GeminiClient {
 
     this.genAI = new GoogleGenerativeAI(key);
     this.model = this.genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
+    });
+  }
+
+  private getFallbackModel() {
+    return this.genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
     });
   }
 
@@ -48,8 +54,25 @@ export class GeminiClient {
       }
 
       return parsed as QueryAnalysis;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error analyzing query with Gemini:", error);
+
+      // Fallback para gemini-pro se o flash falhar (404 ou 429)
+      if (error.message?.includes("404") || error.message?.includes("429")) {
+        try {
+          console.log("Attempting fallback to gemini-pro...");
+          const fallbackModel = this.getFallbackModel();
+          const prompt = QUERY_ANALYSIS_PROMPT(userQuery, analyticsContext);
+          const result = await fallbackModel.generateContent(prompt);
+          const response = await result.response;
+          const text = response.text();
+          const cleanText = text.replace(/```json\n?|\n?```/g, "").trim();
+          return JSON.parse(cleanText) as QueryAnalysis;
+        } catch (fallbackError) {
+          console.error("Fallback failed:", fallbackError);
+        }
+      }
+
       throw new Error(`Failed to analyze query: ${error}`);
     }
   }

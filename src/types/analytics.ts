@@ -1,10 +1,10 @@
 export interface AnalyticsConnection {
   id: string;
   propertyId: string;
-  propertyName?: string;
+  propertyName?: string | null;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface GAProperty {

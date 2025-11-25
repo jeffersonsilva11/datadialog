@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { ConnectGAButton } from "@/components/analytics/ConnectGAButton";
 import { ConnectionStatus } from "@/components/analytics/ConnectionStatus";
+import { PropertySelector } from "@/components/analytics/PropertySelector";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { MessageSquare } from "lucide-react";
 
@@ -19,6 +20,13 @@ export default async function DashboardPage() {
     where: {
       userId: session.user.id,
       isActive: true,
+    },
+  });
+
+  const googleAccount = await prisma.account.findFirst({
+    where: {
+      userId: session.user.id,
+      provider: "google",
     },
   });
 
@@ -53,42 +61,47 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="h-full flex items-center justify-center p-8">
-            <div className="text-center max-w-md space-y-6">
+            <div className="text-center max-w-md space-y-6 w-full">
               <div className="bg-muted/50 rounded-full w-24 h-24 flex items-center justify-center mx-auto">
                 <MessageSquare className="h-12 w-12 text-muted-foreground" />
               </div>
 
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold">
-                  Conecte seu Google Analytics
+                  {googleAccount
+                    ? "Selecione sua Propriedade"
+                    : "Conecte seu Google Analytics"}
                 </h2>
                 <p className="text-muted-foreground">
-                  Para começar a fazer perguntas sobre seus dados, você precisa
-                  conectar sua conta do Google Analytics.
+                  {googleAccount
+                    ? "Escolha qual propriedade você deseja analisar."
+                    : "Para começar a fazer perguntas sobre seus dados, você precisa conectar sua conta do Google Analytics."}
                 </p>
               </div>
 
-              <ConnectGAButton />
+              {googleAccount ? <PropertySelector /> : <ConnectGAButton />}
 
-              <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground mb-3">
-                  O que você poderá fazer:
-                </p>
-                <ul className="text-sm text-left space-y-2 text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5">✓</span>
-                    <span>Fazer perguntas em linguagem natural</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5">✓</span>
-                    <span>Receber visualizações automáticas</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5">✓</span>
-                    <span>Obter insights inteligentes com IA</span>
-                  </li>
-                </ul>
-              </div>
+              {!googleAccount && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    O que você poderá fazer:
+                  </p>
+                  <ul className="text-sm text-left space-y-2 text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      <span>Fazer perguntas em linguagem natural</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      <span>Receber visualizações automáticas</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      <span>Obter insights inteligentes com IA</span>
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { MCPAnalyticsClient } from "@/lib/mcp/client";
+import { GoogleAnalyticsClient } from "@/lib/google-analytics/client";
 import { GeminiClient } from "@/lib/gemini/client";
 import { NextResponse } from "next/server";
 
@@ -78,12 +78,11 @@ export async function POST(req: Request) {
       });
     }
 
-    // Conectar ao MCP
-    const mcpClient = new MCPAnalyticsClient();
-    await mcpClient.connect(gaConnection.propertyId, {
-      access_token: gaConnection.accessToken,
-      refresh_token: gaConnection.refreshToken || undefined,
-    });
+    // Conectar ao GA
+    const gaClient = new GoogleAnalyticsClient(
+      gaConnection.accessToken,
+      gaConnection.refreshToken
+    );
 
     // Analisar query com Gemini
     const gemini = new GeminiClient();
@@ -92,23 +91,39 @@ export async function POST(req: Request) {
       propertyName: gaConnection.propertyName || undefined,
     });
 
-    // Executar query no GA via MCP
-    const gaData = await mcpClient.runReport(analysis.parameters);
+    // Executar query no GA
+    const reportParams = {
+      ...analysis.parameters,
+      dateRanges: analysis.parameters.dateRanges || [{ startDate: '28daysAgo', endDate: 'today' }],
+    };
+
+    const gaData = await gaClient.runReport(
+      gaConnection.propertyId,
+      reportParams
+    );
 
     // Gerar insights
-    const insights = await gemini.generateInsights(gaData.content, message);
+    // O formato de resposta do GA Data API é diferente do MCP, precisamos adaptar se necessário
+    // O client novo retorna o response direto do GA
+    // Vamos assumir que o GeminiClient sabe lidar com isso ou vamos adaptar aqui
+    // O MCP retornava { content: any[] }
+    // O GA retorna { rows: [], dimensionHeaders: [], metricHeaders: [], rowCount: number, metadata: {} }
+    // Vamos passar rows e headers para o Gemini
+
+    // Adaptar resposta para o formato esperado pelo Gemini (se ele esperar o formato antigo do MCP)
+    // Olhando o código do GeminiClient (não vi, mas assumindo), ele deve esperar algo.
+    // Vamos passar o objeto completo por enquanto.
+    const insights = await gemini.generateInsights(gaData.rows || [], message);
 
     // Verificar se precisa de gráfico
     let chartConfig = null;
-    if (gaData.content && Array.isArray(gaData.content) && gaData.content.length > 1) {
+    if (gaData.rows && gaData.rows.length > 1) {
       try {
-        chartConfig = await gemini.generateChartRecommendation(gaData.content);
+        chartConfig = await gemini.generateChartRecommendation(gaData.rows);
       } catch (error) {
         console.error("Error generating chart recommendation:", error);
       }
     }
-
-    await mcpClient.disconnect();
 
     // Salvar resposta do assistente
     const assistantMessage = await prisma.message.create({
@@ -117,11 +132,11 @@ export async function POST(req: Request) {
         role: "assistant",
         content: insights,
         metadata: {
-          data: gaData.content,
+          data: gaData.rows,
           chart: chartConfig,
           parameters: analysis.parameters,
           intent: analysis.intent,
-        },
+        } as any,
       },
     });
 

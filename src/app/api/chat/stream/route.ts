@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { MCPAnalyticsClient } from "@/lib/mcp/client";
+import { GoogleAnalyticsClient } from "@/lib/google-analytics/client";
 import { GeminiClient } from "@/lib/gemini/client";
 
 export async function POST(req: Request) {
@@ -80,12 +80,11 @@ export async function POST(req: Request) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Conectar ao MCP
-          const mcpClient = new MCPAnalyticsClient();
-          await mcpClient.connect(gaConnection.propertyId, {
-            access_token: gaConnection.accessToken,
-            refresh_token: gaConnection.refreshToken || undefined,
-          });
+          // Conectar ao GA
+          const gaClient = new GoogleAnalyticsClient(
+            gaConnection.accessToken,
+            gaConnection.refreshToken
+          );
 
           // Analisar query com Gemini
           const gemini = new GeminiClient();
@@ -94,12 +93,16 @@ export async function POST(req: Request) {
             propertyName: gaConnection.propertyName || undefined,
           });
 
-          // Executar query no GA via MCP
-          const gaData = await mcpClient.runReport(analysis.parameters);
+          // Executar query no GA
+          const gaData = await gaClient.runReport(
+            gaConnection.propertyId,
+            analysis.parameters
+          );
 
           // Stream insights
+          // Passar rows para o Gemini
           const insightsStream = await gemini.streamInsights(
-            gaData.content,
+            gaData.rows || [],
             message
           );
 
@@ -116,17 +119,15 @@ export async function POST(req: Request) {
 
           // Verificar se precisa de gráfico
           let chartConfig = null;
-          if (gaData.content && Array.isArray(gaData.content) && gaData.content.length > 1) {
+          if (gaData.rows && gaData.rows.length > 1) {
             try {
               chartConfig = await gemini.generateChartRecommendation(
-                gaData.content
+                gaData.rows
               );
             } catch (error) {
               console.error("Error generating chart recommendation:", error);
             }
           }
-
-          await mcpClient.disconnect();
 
           // Salvar resposta do assistente
           await prisma.message.create({
@@ -135,11 +136,11 @@ export async function POST(req: Request) {
               role: "assistant",
               content: fullInsights,
               metadata: {
-                data: gaData.content,
+                data: gaData.rows,
                 chart: chartConfig,
                 parameters: analysis.parameters,
                 intent: analysis.intent,
-              },
+              } as any,
             },
           });
 
